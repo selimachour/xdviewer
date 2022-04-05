@@ -1,18 +1,29 @@
 
 const cache = {}
 
+const svgElement = (element) => document.createElementNS('http://www.w3.org/2000/svg', element);
+
 const parser = {
+  svg: null,
+  parse: (data) => {
+    parser.svg = document.getElementById('svg');
+    parser.svg.innerHTML = '';
+    parser.defs = svgElement('defs');
+    parser.svg.appendChild(parser.defs);
+    parser.children(data.children, parser.svg);
+  },
   artboard: async (data, container) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    const el = svgElement('g')
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'artboard');
     container.appendChild(el)
     parser.children(data.artboard.children, el);
   },
   group: async (data, container) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    const el = svgElement('g')
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'group');
+    el.setAttributeNS(null, 'style', await parser.style(data, el))
     if (data.transform) {
       el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
     }
@@ -20,7 +31,7 @@ const parser = {
     parser.children(data.group.children, el);
   },
   syncRef: async (data, container) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    const el = svgElement('g')
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'syncRef');
     if (data.transform) {
@@ -30,23 +41,23 @@ const parser = {
     if (data.group) parser.children(data.group.children, el);
   },
   text: async (data, container) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+    const el = svgElement('text')
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'text');
 
     if (data.transform) {
       el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
     }
-    el.setAttributeNS(null, 'style', await parser.style(data))
+    el.setAttributeNS(null, 'style', await parser.style(data, el))
 
     if (data.text.paragraphs) {
       data.text.paragraphs.forEach(p => {
         p.lines.forEach(async (l) => {
-          const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan')
+          const tspan = svgElement('tspan')
           tspan.setAttributeNS(null, 'x', l[0].x);
           tspan.setAttributeNS(null, 'y', l[0].y);
           tspan.appendChild(document.createTextNode(data.text.rawText.substr(l[0].from, l[0].to - l[0].from)))
-          tspan.setAttributeNS(null, 'style', await parser.style(l[0]))
+          tspan.setAttributeNS(null, 'style', await parser.style(l[0], el))
           el.appendChild(tspan)
         })
       })
@@ -57,18 +68,48 @@ const parser = {
     container.appendChild(el)
   },
   shape: async (data, container) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+
+    // shapes are special
+    const { shape } = data;
+
+    const el = svgElement(shape.type)
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'shape');
+
+    switch (shape.type) {
+      case 'rect':
+        el.setAttributeNS(null, 'x', shape.x);
+        el.setAttributeNS(null, 'y', shape.y);
+        el.setAttributeNS(null, 'width', shape.width);
+        el.setAttributeNS(null, 'height', shape.height);
+        if (shape.r) {
+          el.setAttributeNS(null, 'rx', shape.r[0]);
+          el.setAttributeNS(null, 'ry', shape.r[0]);
+        }
+        break;
+      case 'circle':
+        el.setAttributeNS(null, 'id', shape.id)
+        el.setAttributeNS(null, 'cx', shape.cx);
+        el.setAttributeNS(null, 'cy', shape.cy);
+        el.setAttributeNS(null, 'r', shape.r);
+        break;
+      case 'path':
+        el.setAttributeNS(null, 'd', shape.path)
+        break;
+      case 'line':
+        el.setAttributeNS(null, 'x1', shape.x1)
+        el.setAttributeNS(null, 'y1', shape.y1)
+        el.setAttributeNS(null, 'x2', shape.x2)
+        el.setAttributeNS(null, 'y2', shape.y2)
+        break;
+      default:
+        console.warn(`Unknown shape ${shape.type}`)
+    }
+
     el.setAttributeNS(null, 'style', await parser.style(data, el))
     container.appendChild(el)
     if (data.transform) {
       el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
-    }
-    if (parser[data.shape.type]) {
-      parser[data.shape.type](data.shape, el);
-    } else {
-      console.log(`Unknown Shape: ${data.shape.type}`);
     }
   },
   children: (children, container) => {
@@ -81,27 +122,7 @@ const parser = {
       }
     })
   },
-  rect: (data, container) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    el.setAttributeNS(null, 'id', data.id)
-    el.setAttributeNS(null, 'x', data.x);
-    el.setAttributeNS(null, 'y', data.y);
-    el.setAttributeNS(null, 'width', data.width);
-    el.setAttributeNS(null, 'height', data.height);
-    if (data.r) {
-      el.setAttributeNS(null, 'rx', data.r[0]);
-      el.setAttributeNS(null, 'ry', data.r[0]);
-    }
-    container.appendChild(el)
-  },
-  circle: (data, container) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    el.setAttributeNS(null, 'id', data.id)
-    el.setAttributeNS(null, 'cx', data.cx);
-    el.setAttributeNS(null, 'cy', data.cy);
-    el.setAttributeNS(null, 'r', data.r);
-    container.appendChild(el)
-  },
+
   style: async (data, el) => {
     if (!data.style) return '';
 
@@ -113,31 +134,65 @@ const parser = {
         case 'fill': 
           if (def.color) style += 'fill: ' + parser.color(def.color) + ';';
           else if (def.type === 'pattern') {
-            const resourceId = def.pattern.meta.ux.uid;
-            const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
 
+            const resourceId = def.pattern.meta.ux.uid;
+            const pattern = svgElement('pattern');
+            pattern.setAttributeNS(null, 'id', resourceId);
+            pattern.setAttributeNS(null, 'width', def.pattern.width);
+            pattern.setAttributeNS(null, 'height', def.pattern.height);
+            pattern.setAttributeNS(null, 'patternUnits', 'userSpaceOnUse');
             if (!cache[resourceId]) {
               const resourceEntry = parser.entries.find(e => e.filename === `resources/${resourceId}`);
               cache[resourceId] = await parser.readAsBase64Img(resourceEntry);
             }
-            img.setAttributeNS(null, 'href', cache[resourceId]);
-            el.appendChild(img);
+            const image = svgElement('image');
+            image.setAttributeNS(null, 'href', cache[resourceId]);
+            image.setAttributeNS(null, 'width', def.pattern.width);
+            image.setAttributeNS(null, 'height', def.pattern.height);
+            pattern.appendChild(image);
+            parser.defs.appendChild(pattern);
+
+            el.setAttributeNS(null, 'fill', `url(#${resourceId})`)
           }
           else console.log("Unknown fill", def);
           break;
-        case 'stroke': 
-          if (def.color) style += 'stroke: ' + parser.color(def.color) + ';';
+        case 'stroke':
+          if (def.color) el.setAttributeNS(null, 'stroke', parser.color(def.color))
           else console.log(`Unknown stroke: ${def}`);
-          style += 'stroke-width: ' + (def.width/5) + ';';
+
+          if (def.width) el.setAttributeNS(null, 'stroke-width', def.type === 'none' ? 0 : def.width / 5);
           break;
-          case 'font': 
-          if (def.size) style += 'font-size: ' + def.size + 'px;';
+        case 'font': 
+          if (def.size) el.setAttributeNS(null, 'font-size', def.size + 'px');
           if (def.postscriptName) style += 'font-family: \'' + def.postscriptName + '\';';
-          if (def.family) style += 'font-family: \'' + def.family+'-'+def.style + '\';';
+          else if (def.family) style += 'font-family: \'' + def.family+'-'+def.style + '\';';
+          break;
         case 'opacity': 
           style += 'opacity: ' + def + ';';
           break;
+        default:
+          console.log(`Unkown style.${attr}`);
       }
+    }
+
+    // clip path ?
+    if (data.meta && data.meta.ux && data.meta.ux.viewportHeight) {
+      const { offsetX, offsetY, viewportWidth, viewportHeight } = data.meta.ux;
+      const resourceId = data.id + 'clip';
+      const clipPath = svgElement('clipPath');
+      clipPath.setAttributeNS(null, 'id', resourceId);
+      const rect = svgElement('rect');
+      rect.setAttributeNS(null, 'x', offsetX);
+      rect.setAttributeNS(null, 'y', offsetY);
+      rect.setAttributeNS(null, 'width', viewportWidth);
+      rect.setAttributeNS(null, 'height', viewportHeight);
+      clipPath.appendChild(rect);
+      parser.defs.appendChild(clipPath);
+      el.setAttributeNS(null, 'clip-path', `url(#${resourceId})`)
+    }
+
+    if (data.style.filters && data.style.filters[0] && data.style.filters[0].visible === false) {
+      style += 'display:none;';
     }
     return style
   },
