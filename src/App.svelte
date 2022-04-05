@@ -1,8 +1,9 @@
 <script>
+  import StatusBar from './components/StatusBar.svelte'
   import Parser from './lib/Parser.js';
   import * as zip from "@zip.js/zip.js";
 
-  let entries = [], artboards = {}, jsonPreview = '';
+  let entries = [], artboards = {}, jsonPreview = '', status = '';
 
   async function loadZip(event) {
     const reader = new zip.ZipReader(new zip.BlobReader(event.target.files[0]))
@@ -42,6 +43,7 @@
   }
 
   const readAsBase64Img = async (entry) => {
+    status = 'Decoding file ...';
     const text = await entry.getData(
         new zip.Data64URIWriter(),
         { 
@@ -50,6 +52,7 @@
           }
         }
       );
+    status = ''
     return text;
   }
   Parser.readAsBase64Img = readAsBase64Img;
@@ -59,10 +62,9 @@
     const artboardEntry = entries.find(e => e.filename === `artwork/artboard-${id}/graphics/graphicContent.agc`)
     const artJson = await readAsJson(artboardEntry);
     jsonPreview = JSON.stringify(artJson, null, '   ');
-    console.log(artJson);
     const svg = document.getElementById('svg');
     svg.setAttributeNS(null, 'viewBox', `${art.x} ${art.y} ${art.width} ${art.height}`);
-    Parser.children(artJson.children, svg);
+    Parser.parse(artJson);
   }
 
 </script>
@@ -87,6 +89,7 @@
     <svg id="svg" />
   </main>
 </section>
+<StatusBar {status} />
 <pre>{jsonPreview}</pre>
 
 <style>
