@@ -10,11 +10,11 @@
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^1.0.0-next.30",
+    "sass": "^1.49.11",
     "svelte": "^3.44.0",
+    "@zip.js/zip.js": "^2.4.7",
     "vite": "^2.8.0"
   },
   "dependencies": {
-    "@zip.js/zip.js": "^2.4.7",
-    "unzipper": "^0.10.11"
   }
 }

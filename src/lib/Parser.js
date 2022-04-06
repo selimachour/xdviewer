@@ -1,7 +1,16 @@
+import { readAsBase64Img } from "./parser/unzip";
 
 const cache = {}
 
-const svgElement = (element) => document.createElementNS('http://www.w3.org/2000/svg', element);
+const svgElement = (element, data) => {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', element);
+  el.definition = data;
+  el.onclick = (e) => {
+    e.stopPropagation()
+    parser.props(el);
+  }
+  return el
+}
 
 const parser = {
   svg: null,
@@ -13,14 +22,14 @@ const parser = {
     parser.children(data.children, parser.svg);
   },
   artboard: async (data, container) => {
-    const el = svgElement('g')
+    const el = svgElement('g', data)
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'artboard');
     container.appendChild(el)
     parser.children(data.artboard.children, el);
   },
   group: async (data, container) => {
-    const el = svgElement('g')
+    const el = svgElement('g', data)
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'group');
     el.setAttributeNS(null, 'style', await parser.style(data, el))
@@ -31,7 +40,7 @@ const parser = {
     parser.children(data.group.children, el);
   },
   syncRef: async (data, container) => {
-    const el = svgElement('g')
+    const el = svgElement('g', data)
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'syncRef');
     if (data.transform) {
@@ -41,7 +50,7 @@ const parser = {
     if (data.group) parser.children(data.group.children, el);
   },
   text: async (data, container) => {
-    const el = svgElement('text')
+    const el = svgElement('text', data)
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'text');
 
@@ -53,7 +62,7 @@ const parser = {
     if (data.text.paragraphs) {
       data.text.paragraphs.forEach(p => {
         p.lines.forEach(async (l) => {
-          const tspan = svgElement('tspan')
+          const tspan = svgElement('tspan', data)
           tspan.setAttributeNS(null, 'x', l[0].x);
           tspan.setAttributeNS(null, 'y', l[0].y);
           tspan.appendChild(document.createTextNode(data.text.rawText.substr(l[0].from, l[0].to - l[0].from)))
@@ -72,7 +81,7 @@ const parser = {
     // shapes are special
     const { shape } = data;
 
-    const el = svgElement(shape.type)
+    const el = svgElement(shape.type, data)
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'shape');
 
@@ -138,12 +147,13 @@ const parser = {
             const resourceId = def.pattern.meta.ux.uid;
             const pattern = svgElement('pattern');
             pattern.setAttributeNS(null, 'id', resourceId);
-            pattern.setAttributeNS(null, 'width', def.pattern.width);
-            pattern.setAttributeNS(null, 'height', def.pattern.height);
-            pattern.setAttributeNS(null, 'patternUnits', 'userSpaceOnUse');
+            pattern.setAttributeNS(null, 'width', '100%');
+            pattern.setAttributeNS(null, 'height', '100%');
+            pattern.setAttributeNS(null, 'viewBox', `0 0 ${def.pattern.width} ${def.pattern.height}`);
+            pattern.setAttributeNS(null, 'preserveAspectRatio', 'xMidYMid slice');
             if (!cache[resourceId]) {
-              const resourceEntry = parser.entries.find(e => e.filename === `resources/${resourceId}`);
-              cache[resourceId] = await parser.readAsBase64Img(resourceEntry);
+              const resourceEntry = parser.entries[`resources/${resourceId}`];
+              cache[resourceId] = await readAsBase64Img(resourceEntry);
             }
             const image = svgElement('image');
             image.setAttributeNS(null, 'href', cache[resourceId]);
@@ -152,6 +162,29 @@ const parser = {
             pattern.appendChild(image);
             parser.defs.appendChild(pattern);
 
+            el.setAttributeNS(null, 'fill', `url(#${resourceId})`)
+          }
+          else if (def.type === 'gradient') {
+
+            const resourceId = def.id + 'gradient';
+
+            const linearGradient = svgElement('linearGradient');
+            linearGradient.setAttributeNS(null, 'id', resourceId);
+            linearGradient.setAttributeNS(null, 'x1', def.gradient.x1);
+            linearGradient.setAttributeNS(null, 'y1', def.gradient.y1);
+            linearGradient.setAttributeNS(null, 'x2', def.gradient.x2);
+            linearGradient.setAttributeNS(null, 'y2', def.gradient.y2);
+            linearGradient.setAttributeNS(null, 'gradientUnits', def.gradient.units);
+
+            def.gradient.meta.ux.gradientResources.stops.forEach(s => {
+              const stop = svgElement('stop');
+              stop.setAttributeNS(null, 'offset', s.offset);
+              stop.setAttributeNS(null, 'stop-color', parser.color2(s.color));
+              if ('undefined' !== typeof s.color.alpha) stop.setAttributeNS(null, 'stop-opacity', s.color.alpha);
+              linearGradient.appendChild(stop);
+            })
+
+            parser.defs.appendChild(linearGradient);
             el.setAttributeNS(null, 'fill', `url(#${resourceId})`)
           }
           else console.log("Unknown fill", def);
@@ -203,6 +236,12 @@ const parser = {
         return `rgba(${r},${g},${b}, ${c.alpha})`;
       else
         return `rgb(${r},${g},${b})`;
+    }
+  },
+  color2: c => {
+    if (c.mode === 'RGB') {
+      const { r, g, b } = c.value;
+      return `rgb(${r},${g},${b})`;
     }
   }
 }

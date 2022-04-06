@@ -1,16 +1,15 @@
 <script>
   import StatusBar from './components/StatusBar.svelte'
   import Parser from './lib/Parser.js';
-  import * as zip from "@zip.js/zip.js";
+  import ElementProperties from './components/ElementProperties.svelte'
+  import { unzip, readAsJson } from './lib/parser/unzip.js'
 
-  let entries = [], artboards = {}, jsonPreview = '', status = '';
+  let entries = {}, artboards = {}, jsonPreview = '', status = '', clickedElement = null;
 
   async function loadZip(event) {
-    const reader = new zip.ZipReader(new zip.BlobReader(event.target.files[0]))
 
     try {
-      entries = await reader.getEntries();
-      if (!entries.length) throw new Error("Empty XD file");
+      entries = await unzip(event.target.files[0])
 
       Parser.entries = entries;
 
@@ -22,118 +21,62 @@
       alert('Invalid XD file. Should be a zip with some files.')
     }
 
-    // close the ZipReader
-    await reader.close();
   }
 
   const getRootEntry = () => {
-    return entries.find(e => e.filename === 'resources/graphics/graphicContent.agc') || alert('NO ROOT');
+    return entries['resources/graphics/graphicContent.agc'];
   }
 
-  const readAsJson = async (entry) => {
-    const text = await entry.getData(
-        new zip.TextWriter(),
-        { 
-          onprogress: (index, max) => {
-            // onprogress callback
-          }
-        }
-      );
-    return JSON.parse(text);
+  const props = (el) => {
+    clickedElement = el;
   }
-
-  const readAsBase64Img = async (entry) => {
-    status = 'Decoding file ...';
-    const text = await entry.getData(
-        new zip.Data64URIWriter(),
-        { 
-          onprogress: (index, max) => {
-            // onprogress callback
-          }
-        }
-      );
-    status = ''
-    return text;
-  }
-  Parser.readAsBase64Img = readAsBase64Img;
 
   const loadArtboard = async (id) => {
     const art = artboards[id];
-    const artboardEntry = entries.find(e => e.filename === `artwork/artboard-${id}/graphics/graphicContent.agc`)
+    const artboardEntry = entries[`artwork/artboard-${id}/graphics/graphicContent.agc`]
     const artJson = await readAsJson(artboardEntry);
     jsonPreview = JSON.stringify(artJson, null, '   ');
     const svg = document.getElementById('svg');
     svg.setAttributeNS(null, 'viewBox', `${art.x} ${art.y} ${art.width} ${art.height}`);
     Parser.parse(artJson);
+    Parser.props = props;
   }
+
 
 </script>
 
-<h1>XD viewer 0.1</h1>
-<section>
-
-  <aside>
+<main>
+  <nav>
+    <h1>XD viewer 0.1</h1>
     <input type="file" accept=".xd" on:change={loadZip} />
+  </nav>
+  <aside id="Left">
     <h2>Artboards</h2>
-    <ul class="artboards">
+    <div class="artboards">
       {#each Object.entries(artboards) as [id, artboard]}
-      <li class="art" title={id} on:click={loadArtboard(id)}>{artboard.name}</li>
+      <span class="a" on:click={loadArtboard(id)}>{artboard.name}</span>
       {/each}
-    </ul>
-
-    <h2>List of files</h2>
-    <pre class="entries">{ entries.map(e => e.filename).join('\n') }</pre>
+    </div>
   </aside>
-  <main>
-  
+  <aside id="Right">
+    <ElementProperties el={clickedElement} />
+  </aside>
+  <div id="Viewer">
     <svg id="svg" />
-  </main>
-</section>
-<StatusBar {status} />
-<pre>{jsonPreview}</pre>
+  </div>
+  <StatusBar {status} />
+</main>
 
 <style>
-  :root {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  }
-  
-  section {
-    display: grid;
-    width: 100%;
-    grid-template-columns: 20em 1fr;
-  }
 
-  main {
-    padding: 1em;
-  }
-
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-weight: 100;
-    line-height: 1.1;
-    margin: 2rem auto;
-  }
-
-  p {
-    max-width: 14rem;
-    margin: 1rem auto;
-    line-height: 1.35;
-  }
-
-  .artboards {
-    list-style: none;
-    padding: 0;
-    font-size: 0.8em;
-  }
-  .artboards > li {
-    cursor: pointer;
-  }
-
-  .entries {
-    max-height: 10rem;
-    overflow: auto;
-  }
+nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  border-bottom: 1px solid #aaa;
+  background-color: #ddd;
+  height: var(--navHeight);
+  padding-inline: 1rem;
+}
 
 </style>

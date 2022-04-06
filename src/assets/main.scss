@@ -1,0 +1,75 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+
+body {
+  position: fixed;
+  inset: 0;
+
+  --navHeight: 2rem;
+  --leftWidth: 200px;
+  --rightWidth: 300px;
+}
+
+#Left {
+  position: absolute;
+  top: var(--navHeight);
+  bottom: 0;
+  width: var(--leftWidth);
+  background-color: #eee;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+#Right {
+  position: absolute;
+  top: var(--navHeight);
+  right: 0;
+  bottom: 0;
+  width: var(--rightWidth);
+  background-color: #eee;
+  overflow: auto;
+}
+
+#Viewer {
+  position: absolute;
+  top: var(--navHeight);
+  left: var(--leftWidth);
+  right: var(--rightWidth);
+  bottom: 0;
+  overflow: auto;
+  padding: 1px;
+}
+
+h2 {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+a, .a {
+  text-decoration: none;
+  cursor: pointer;
+  color: darkblue;
+  font-size: 0.8em;
+}
+
+.artboards {
+  padding-block: 1em;
+  overflow: auto;
+  .a {
+    font-size: 0.8em;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
