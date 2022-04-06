@@ -2,15 +2,11 @@
 
 ## What is it ?
 
-An attempt from a linux web developper at viewing XD files.
+This is a simple web app with a file input. Once an XD selected, it parses it, displays the list of Artboards. Clicking an artboard displays it as SVG.
 
 ## Why ?
 
 Because some of us don't have Macs, don't like Windows, but still need to work with Adobe XD files.
-
-## So what is it exactly ?
-
-This is a simple web with a file input. Once an XD selected, it parses it, displays the list of Artboards. Clicking an artboard displays it as SVG.
 
 ## Features
 
@@ -24,6 +20,7 @@ This is a simple web with a file input. Once an XD selected, it parses it, displ
 - `refSync`s not implemented yet so some parts might be missing
 
 ## Todo
+- Clean the code ! 
 - Fix the bugs
 - Extracts a list of all font properties combinations which would help with creating unique css classes
 - Show css equivalent for properties (`fill: foo` => `background: bar`) 
