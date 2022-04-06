@@ -8,6 +8,19 @@ This is a simple web app with a file input. Once an XD selected, it parses it, d
 
 Because some of us don't have Macs, don't like Windows, but still need to work with Adobe XD files.
 
+## How to use it
+
+```
+git clone git@github.com:selimachour/xdviewer.git
+cd xdviwer
+yarn
+yarn devs
+```
+
+Also for fonts, add the required fonts in `/fonts` and include them in index.html
+
+There is already an example
+
 ## Features
 
 - View XD files locally (no uploading to a remote site)
