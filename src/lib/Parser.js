@@ -81,7 +81,7 @@ const parser = {
     // shapes are special
     const { shape } = data;
 
-    const el = svgElement(shape.type, data)
+    let el = svgElement(shape.type, data)
     el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'shape');
 
@@ -92,8 +92,25 @@ const parser = {
         el.setAttributeNS(null, 'width', shape.width);
         el.setAttributeNS(null, 'height', shape.height);
         if (shape.r) {
-          el.setAttributeNS(null, 'rx', shape.r[0]);
-          el.setAttributeNS(null, 'ry', shape.r[0]);
+          const [tl, tr, br, bl] = shape.r;
+          // only some round corners ... not supported by <rect> ?
+          if (tl !== tr || tr !== br) {
+            el = svgElement('path', data)
+            el.setAttributeNS(null, 'd', `
+              M${shape.x + tl},${shape.y} 
+              h${shape.width - tl - tr} 
+              q${tr},0 ${tr},${tr} 
+              v${shape.height - tr - br} 
+              q0,${br} ${-br},${br}
+              h-${shape.width - bl - br}
+              q${-bl},0 ${-bl},${-bl}
+              v-${shape.height - bl - tl}
+              q0,${-tl} ${tl},${-tl}
+              z`.replace(/\s+/g, ' '))
+          } else {
+            el.setAttributeNS(null, 'rx', shape.r[0]);
+            el.setAttributeNS(null, 'ry', shape.r[0]);
+          }
         }
         break;
       case 'circle':
@@ -226,7 +243,7 @@ const parser = {
     }
 
     if (data.style.filters && data.style.filters[0] && data.style.filters[0].visible === false) {
-      style += 'display:none;';
+      //style += 'display:none;';
     }
     return style
   },
