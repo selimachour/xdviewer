@@ -3,19 +3,25 @@
   import Parser from './lib/Parser.js';
   import ElementProperties from './components/ElementProperties.svelte'
   import { unzip, readAsJson } from './lib/parser/unzip.js'
+  
+  let artboardsFilter = ''
 
-  let entries = {}, artboards = {}, jsonPreview = '', status = '', clickedElement = null;
+  let entries = {}, artboards = {}, status = '', clickedElement = null;
 
   async function loadZip(event) {
 
     try {
       entries = await unzip(event.target.files[0])
-
       Parser.entries = entries;
+      console.log({entries});
 
-      const root = getRootEntry();
-      const rootJson = await readAsJson(root);
-      artboards = rootJson.artboards;
+      const manifest = await readAsJson(entries['manifest']);
+      Parser.manifest = manifest;
+      console.log({manifest});
+      manifest.children.find(c => c.name === 'artwork').children.forEach(c => {
+        if (c['uxdesign#bounds']) artboards[c.id] = c;
+      })
+      console.log({artboards});
 
     } catch {
       alert('Invalid XD file. Should be a zip with some files.')
@@ -23,21 +29,19 @@
 
   }
 
-  const getRootEntry = () => {
-    return entries['resources/graphics/graphicContent.agc'];
-  }
-
   const props = (el) => {
     clickedElement = el;
   }
 
   const loadArtboard = async (id) => {
+    console.log({id});
     const art = artboards[id];
-    const artboardEntry = entries[`artwork/artboard-${id}/graphics/graphicContent.agc`]
+    const artboardEntry = entries[`artwork/${art.path}/graphics/graphicContent.agc`]
+    if (!artboardEntry) return
+    console.log({entries}, {artboardEntry});
     const artJson = await readAsJson(artboardEntry);
-    jsonPreview = JSON.stringify(artJson, null, '   ');
     const svg = document.getElementById('svg');
-    svg.setAttributeNS(null, 'viewBox', `${art.x} ${art.y} ${art.width} ${art.height}`);
+    svg.setAttributeNS(null, 'viewBox', `${art['uxdesign#bounds'].x} ${art['uxdesign#bounds'].y} ${art['uxdesign#bounds'].width} ${art['uxdesign#bounds'].height}`);
     Parser.parse(artJson);
     Parser.props = props;
   }
@@ -53,7 +57,8 @@
   <aside id="Left">
     <h2>Artboards</h2>
     <div class="artboards">
-      {#each Object.entries(artboards) as [id, artboard]}
+      <input type="text" bind:value={artboardsFilter}>
+      {#each Object.entries(artboards).filter(([id, artboard]) => artboard.name.toLowerCase().match(artboardsFilter.toLocaleLowerCase())) as [id, artboard]}
       <span class="a" on:click={loadArtboard(id)}>{artboard.name}</span>
       {/each}
     </div>
