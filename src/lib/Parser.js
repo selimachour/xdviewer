@@ -141,7 +141,8 @@ const parser = {
       const def = data.style[attr];
       switch(attr) {
         case 'fill': 
-          if (def.color) style += 'fill: ' + parser.color(def.color) + ';';
+          if (def.type === 'none') style += 'fill:none;';
+          else if (def.color) style += 'fill: ' + parser.color(def.color) + ';';
           else if (def.type === 'pattern') {
 
             const resourceId = def.pattern.meta.ux.uid;
