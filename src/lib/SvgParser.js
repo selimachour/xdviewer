@@ -89,7 +89,6 @@ const parser = {
     let el = svgElement(shape.type, data)
     el.setAttributeNS(null, 'class', 'shape');
 
-    parser.parseFilters(data, el)
 
     switch (shape.type) {
       case 'rect':
@@ -138,6 +137,7 @@ const parser = {
     }
 
     await parser.parseStyle(data, el)
+
     container.appendChild(el)
     if (data.transform) {
       el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
@@ -210,11 +210,19 @@ const parser = {
       else console.log("Unknown fill", style.fill);
     }
 
-    if (style.stoke) {
-      if (style.stroke.color) el.setAttributeNS(null, 'stroke', parser.parseColorAlpha(style.stroke.color))
+    if (style.stroke) {
+
+      if (style.stroke.color) el.style.stroke = parser.parseColorAlpha(style.stroke.color)
       else console.log(`Unknown stroke: ${style.stroke}`);
 
       if (style.stroke.width) el.setAttributeNS(null, 'stroke-width', style.stroke.type === 'none' ? 0 : style.stroke.width);
+
+      if (style.stroke.dash) el.style.strokeDasharray = style.stroke.dash.join(' ');
+
+      if (style.stroke.join) el.style.strokeLinejoin = style.stroke.join;
+
+      if (style.stroke.cap) el.style.strokeLinecap = style.stroke.cap;
+
     }
 
     if (style.font) {
