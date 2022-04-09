@@ -2,13 +2,22 @@ import { readAsBase64Img } from "./parser/unzip";
 
 const cache = {}
 
+let _uid = 0;
+const uid = () => _uid++;
+
 const svgElement = (element, data) => {
   const el = document.createElementNS('http://www.w3.org/2000/svg', element);
-  el.definition = data;
-  el.onclick = (e) => {
-    e.stopPropagation()
-    parser.props(el);
+
+  if (data) {
+    if (data.id) el.id = data.id;
+    el.definition = data;
+
+    el.onclick = (e) => {
+      e.stopPropagation()
+      parser.props(el);
+    }
   }
+
   return el
 }
 
@@ -23,16 +32,14 @@ const parser = {
   },
   artboard: async (data, container) => {
     const el = svgElement('g', data)
-    el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'artboard');
     container.appendChild(el)
     parser.children(data.artboard.children, el);
   },
   group: async (data, container) => {
     const el = svgElement('g', data)
-    el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'group');
-    el.setAttributeNS(null, 'style', await parser.style(data, el))
+    await parser.parseStyle(data, el)
     if (data.transform) {
       el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
     }
@@ -41,7 +48,6 @@ const parser = {
   },
   syncRef: async (data, container) => {
     const el = svgElement('g', data)
-    el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'syncRef');
     if (data.transform) {
       el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
@@ -51,13 +57,12 @@ const parser = {
   },
   text: async (data, container) => {
     const el = svgElement('text', data)
-    el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'text');
 
     if (data.transform) {
       el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
     }
-    el.setAttributeNS(null, 'style', await parser.style(data, el))
+    await parser.parseStyle(data, el)
 
     if (data.text.paragraphs) {
       data.text.paragraphs.forEach(p => {
@@ -66,7 +71,7 @@ const parser = {
           tspan.setAttributeNS(null, 'x', l[0].x);
           tspan.setAttributeNS(null, 'y', l[0].y);
           tspan.appendChild(document.createTextNode(data.text.rawText.substr(l[0].from, l[0].to - l[0].from)))
-          tspan.setAttributeNS(null, 'style', await parser.style(l[0], el))
+          await parser.parseStyle(l[0], tspan)
           el.appendChild(tspan)
         })
       })
@@ -82,8 +87,9 @@ const parser = {
     const { shape } = data;
 
     let el = svgElement(shape.type, data)
-    el.setAttributeNS(null, 'id', data.id)
     el.setAttributeNS(null, 'class', 'shape');
+
+    parser.parseFilters(data, el)
 
     switch (shape.type) {
       case 'rect':
@@ -114,7 +120,6 @@ const parser = {
         }
         break;
       case 'circle':
-        el.setAttributeNS(null, 'id', shape.id)
         el.setAttributeNS(null, 'cx', shape.cx);
         el.setAttributeNS(null, 'cy', shape.cy);
         el.setAttributeNS(null, 'r', shape.r);
@@ -132,7 +137,7 @@ const parser = {
         console.warn(`Unknown shape ${shape.type}`)
     }
 
-    el.setAttributeNS(null, 'style', await parser.style(data, el))
+    await parser.parseStyle(data, el)
     container.appendChild(el)
     if (data.transform) {
       el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
@@ -149,81 +154,77 @@ const parser = {
     })
   },
 
-  style: async (data, el) => {
+  parseStyle: async (data, el) => {
     if (!data.style) return '';
 
-    let style = '';
+    let { style } = data;
 
-    for(let attr in data.style) {
-      const def = data.style[attr];
-      switch(attr) {
-        case 'fill': 
-          if (def.type === 'none') style += 'fill:none;';
-          else if (def.color) style += 'fill: ' + parser.color(def.color) + ';';
-          else if (def.type === 'pattern') {
+    if (style.fill) {
+      if (style.fill.type === 'none') el.style.fill = 'none';
+      else if (style.fill.color) el.style.fill = parser.parseColorAlpha(style.fill.color);
+      else if (style.fill.type === 'pattern') {
 
-            const resourceId = def.pattern.meta.ux.uid;
-            const pattern = svgElement('pattern');
-            pattern.setAttributeNS(null, 'id', resourceId);
-            pattern.setAttributeNS(null, 'width', '100%');
-            pattern.setAttributeNS(null, 'height', '100%');
-            pattern.setAttributeNS(null, 'viewBox', `0 0 ${def.pattern.width} ${def.pattern.height}`);
-            pattern.setAttributeNS(null, 'preserveAspectRatio', 'xMidYMid slice');
-            if (!cache[resourceId]) {
-              const resourceEntry = parser.entries[`resources/${resourceId}`];
-              cache[resourceId] = await readAsBase64Img(resourceEntry);
-            }
-            const image = svgElement('image');
-            image.setAttributeNS(null, 'href', cache[resourceId]);
-            image.setAttributeNS(null, 'width', def.pattern.width);
-            image.setAttributeNS(null, 'height', def.pattern.height);
-            pattern.appendChild(image);
-            parser.defs.appendChild(pattern);
+        const resourceId = style.fill.pattern.meta.ux.uid;
+        const pattern = svgElement('pattern');
+        pattern.setAttributeNS(null, 'id', resourceId);
+        pattern.setAttributeNS(null, 'width', '100%');
+        pattern.setAttributeNS(null, 'height', '100%');
+        pattern.setAttributeNS(null, 'viewBox', `0 0 ${style.fill.pattern.width} ${style.fill.pattern.height}`);
+        pattern.setAttributeNS(null, 'preserveAspectRatio', 'xMidYMid slice');
+        if (!cache[resourceId]) {
+          const resourceEntry = parser.entries[`resources/${resourceId}`];
+          cache[resourceId] = await readAsBase64Img(resourceEntry);
+        }
+        const image = svgElement('image');
+        image.setAttributeNS(null, 'href', cache[resourceId]);
+        image.setAttributeNS(null, 'width', style.fill.pattern.width);
+        image.setAttributeNS(null, 'height', style.fill.pattern.height);
+        pattern.appendChild(image);
+        parser.defs.appendChild(pattern);
 
-            el.setAttributeNS(null, 'fill', `url(#${resourceId})`)
-          }
-          else if (def.type === 'gradient') {
-
-            const resourceId = def.id + 'gradient';
-
-            const linearGradient = svgElement('linearGradient');
-            linearGradient.setAttributeNS(null, 'id', resourceId);
-            linearGradient.setAttributeNS(null, 'x1', def.gradient.x1);
-            linearGradient.setAttributeNS(null, 'y1', def.gradient.y1);
-            linearGradient.setAttributeNS(null, 'x2', def.gradient.x2);
-            linearGradient.setAttributeNS(null, 'y2', def.gradient.y2);
-            linearGradient.setAttributeNS(null, 'gradientUnits', def.gradient.units);
-
-            def.gradient.meta.ux.gradientResources.stops.forEach(s => {
-              const stop = svgElement('stop');
-              stop.setAttributeNS(null, 'offset', s.offset);
-              stop.setAttributeNS(null, 'stop-color', parser.color2(s.color));
-              if ('undefined' !== typeof s.color.alpha) stop.setAttributeNS(null, 'stop-opacity', s.color.alpha);
-              linearGradient.appendChild(stop);
-            })
-
-            parser.defs.appendChild(linearGradient);
-            el.setAttributeNS(null, 'fill', `url(#${resourceId})`)
-          }
-          else console.log("Unknown fill", def);
-          break;
-        case 'stroke':
-          if (def.color) el.setAttributeNS(null, 'stroke', parser.color(def.color))
-          else console.log(`Unknown stroke: ${def}`);
-
-          if (def.width) el.setAttributeNS(null, 'stroke-width', def.type === 'none' ? 0 : def.width);
-          break;
-        case 'font': 
-          if (def.size) el.setAttributeNS(null, 'font-size', def.size + 'px');
-          if (def.postscriptName) style += 'font-family: \'' + def.postscriptName + '\';';
-          else if (def.family) style += 'font-family: \'' + def.family+'-'+def.style + '\';';
-          break;
-        case 'opacity': 
-          style += 'opacity: ' + def + ';';
-          break;
-        default:
-          console.log(`Unkown style.${attr}`);
+        el.setAttributeNS(null, 'fill', `url(#${resourceId})`)
       }
+      else if (style.fill.type === 'gradient') {
+
+        const resourceId = style.fill.id + 'gradient';
+
+        const linearGradient = svgElement('linearGradient');
+        linearGradient.setAttributeNS(null, 'id', resourceId);
+        linearGradient.setAttributeNS(null, 'x1', style.fill.gradient.x1);
+        linearGradient.setAttributeNS(null, 'y1', style.fill.gradient.y1);
+        linearGradient.setAttributeNS(null, 'x2', style.fill.gradient.x2);
+        linearGradient.setAttributeNS(null, 'y2', style.fill.gradient.y2);
+        linearGradient.setAttributeNS(null, 'gradientUnits', style.fill.gradient.units);
+
+        style.fill.gradient.meta.ux.gradientResources.stops.forEach(s => {
+          const stop = svgElement('stop');
+          stop.setAttributeNS(null, 'offset', s.offset);
+          stop.setAttributeNS(null, 'stop-color', parser.parseColor(s.color));
+          if ('undefined' !== typeof s.color.alpha) stop.setAttributeNS(null, 'stop-opacity', s.color.alpha);
+          linearGradient.appendChild(stop);
+        })
+
+        parser.defs.appendChild(linearGradient);
+        el.setAttributeNS(null, 'fill', `url(#${resourceId})`)
+      }
+      else console.log("Unknown fill", style.fill);
+    }
+
+    if (style.stoke) {
+      if (style.stroke.color) el.setAttributeNS(null, 'stroke', parser.parseColorAlpha(style.stroke.color))
+      else console.log(`Unknown stroke: ${style.stroke}`);
+
+      if (style.stroke.width) el.setAttributeNS(null, 'stroke-width', style.stroke.type === 'none' ? 0 : style.stroke.width);
+    }
+
+    if (style.font) {
+      if (style.font.size) el.style.fontSize = style.font.size + 'px';
+      if (style.font.postscriptName) el.style.fontFamily = `'${style.font.postscriptName}'`;
+      else if (style.font.family) el.style.fontFamily = `'${style.font.family}-${style.font.style}'`;
+    }
+
+    if (style.opacity) {
+      el.style.opacity = style.opacity;
     }
 
     // clip path ?
@@ -233,8 +234,8 @@ const parser = {
       const clipPath = svgElement('clipPath');
       clipPath.setAttributeNS(null, 'id', resourceId);
       const rect = svgElement('rect');
-      rect.setAttributeNS(null, 'x', offsetX);
-      rect.setAttributeNS(null, 'y', offsetY);
+      if ('undefined' !== typeof offsetX) rect.setAttributeNS(null, 'x', offsetX);
+      if ('undefined' !== typeof offsetY) rect.setAttributeNS(null, 'y', offsetY);
       rect.setAttributeNS(null, 'width', viewportWidth);
       rect.setAttributeNS(null, 'height', viewportHeight);
       clipPath.appendChild(rect);
@@ -242,12 +243,55 @@ const parser = {
       el.setAttributeNS(null, 'clip-path', `url(#${resourceId})`)
     }
 
-    if (data.style.filters && data.style.filters[0] && data.style.filters[0].visible === false) {
+
+    parser.parseFilters(data, el)
+
+    if (style.filters && style.filters[0] && style.filters[0].visible === false) {
       //style += 'display:none;';
     }
     return style
   },
-  color: c => {
+
+  parseFilters: (data, el) => {
+    if (!data.style.filters) return;
+
+    console.log('parsing filters');
+    data.style.filters.forEach(filter => {
+
+      // skip invisible filters
+      if (filter.visible === false) return;
+
+      switch (filter.type) {
+
+        case 'dropShadow':
+          filter.params.dropShadows.forEach(dropShadow => {
+            const { dx, dy, r, color } = dropShadow;
+
+            const filter = svgElement('filter');
+            filter.id = 'filter-' + uid();
+
+            const feDropShadow = svgElement('feDropShadow');
+            feDropShadow.setAttributeNS(null, 'dx', dx);
+            feDropShadow.setAttributeNS(null, 'dy', dy);
+            feDropShadow.setAttributeNS(null, 'stdDeviation', r);
+            feDropShadow.setAttributeNS(null, 'flood-color', parser.parseColor(color));
+            feDropShadow.setAttributeNS(null, 'flood-opacity', color.alpha);
+
+            filter.appendChild(feDropShadow);
+            parser.defs.appendChild(filter);
+            el.style.filter = `url(#${filter.id})`
+            console.log(el.style);
+          })
+
+          break;
+        default:
+          console.warn(`Unknown filter type ${filter.type}`)
+      }
+    })
+
+  },
+
+  parseColorAlpha: c => {
     if (c.mode === 'RGB') {
       const { r, g, b } = c.value;
       if (c.alpha) 
@@ -256,7 +300,7 @@ const parser = {
         return `rgb(${r},${g},${b})`;
     }
   },
-  color2: c => {
+  parseColor: c => {
     if (c.mode === 'RGB') {
       const { r, g, b } = c.value;
       return `rgb(${r},${g},${b})`;
