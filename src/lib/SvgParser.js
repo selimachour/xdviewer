@@ -210,12 +210,12 @@ const parser = {
       else console.log("Unknown fill", style.fill);
     }
 
-    if (style.stroke) {
+    if (style.stroke && 'none' !== style.stroke.type) {
 
       if (style.stroke.color) el.style.stroke = parser.parseColorAlpha(style.stroke.color)
       else console.log(`Unknown stroke: ${style.stroke}`);
 
-      if (style.stroke.width) el.setAttributeNS(null, 'stroke-width', style.stroke.type === 'none' ? 0 : style.stroke.width);
+      if (style.stroke.width) el.style.strokeWidth = style.stroke.width;
 
       if (style.stroke.dash) el.style.strokeDasharray = style.stroke.dash.join(' ');
 
@@ -234,6 +234,10 @@ const parser = {
     if (style.opacity) {
       el.style.opacity = style.opacity;
     }
+
+    if (style.blendMode) el.style.mixBlendMode = style.blendMode
+    
+    if (style.isolate) el.style.isolate = style.isolate
 
     // clip path ?
     if (data.meta && data.meta.ux && data.meta.ux.viewportHeight) {
