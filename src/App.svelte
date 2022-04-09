@@ -1,6 +1,6 @@
 <script>
-  import StatusBar from './components/StatusBar.svelte'
-  import Parser from './lib/Parser.js';
+  //import StatusBar from './components/StatusBar.svelte'
+  import Parser from './lib/SvgParser.js';
   import ElementProperties from './components/ElementProperties.svelte'
   import { unzip, readAsJson } from './lib/parser/unzip.js'
   
@@ -69,7 +69,7 @@
   <div id="Viewer">
     <svg id="svg" />
   </div>
-  <StatusBar {status} />
+  <!-- <StatusBar {status} /> -->
 </main>
 
 <style>

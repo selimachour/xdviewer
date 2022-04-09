@@ -1,7 +1,7 @@
 <script>
   export let el;
   let elements = [];
-  let selectedElement = '';
+  let selectedElement = null;
 
   $: {
     elements = []
@@ -14,7 +14,7 @@
       })
       elements.push(elProps)
       element = element.parentElement;
-      if (element.nodeName === 'DIV') break;
+      if (element.id === 'svg') break;
     }
   }
 

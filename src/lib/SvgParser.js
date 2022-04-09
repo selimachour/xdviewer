@@ -211,7 +211,7 @@ const parser = {
           if (def.color) el.setAttributeNS(null, 'stroke', parser.color(def.color))
           else console.log(`Unknown stroke: ${def}`);
 
-          if (def.width) el.setAttributeNS(null, 'stroke-width', def.type === 'none' ? 0 : def.width / 5);
+          if (def.width) el.setAttributeNS(null, 'stroke-width', def.type === 'none' ? 0 : def.width);
           break;
         case 'font': 
           if (def.size) el.setAttributeNS(null, 'font-size', def.size + 'px');
