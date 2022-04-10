@@ -80,10 +80,15 @@ const parser = {
     if (data.text.paragraphs) {
       data.text.paragraphs.forEach(p => {
         p.lines.forEach(async (line) => {
-          line.forEach(async (segment) => {
+          line.forEach(async (segment, index) => {
             const tspan = svgElement('tspan', data)
-            tspan.setAttributeNS(null, 'x', segment.x);
-            tspan.setAttributeNS(null, 'y', segment.y);
+
+            if ('undefined' !== typeof segment.x) {
+              tspan.setAttributeNS(null, 'x', segment.x);
+            } else if (index === 0) {
+              tspan.setAttributeNS(null, 'x', 0);
+            }
+            tspan.setAttributeNS(null, 'y', segment.y || 0);
             tspan.appendChild(document.createTextNode(data.text.rawText.substr(segment.from, segment.to - segment.from)))
             await parser.parseStyle(segment, tspan)
             el.appendChild(tspan)
