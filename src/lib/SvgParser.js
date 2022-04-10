@@ -136,6 +136,9 @@ const parser = {
       case 'path':
         el.setAttributeNS(null, 'd', shape.path)
         break;
+      case 'polygon':
+        el.setAttributeNS(null, 'points', shape.points.map(o => `${o.x},${o.y}`).join(' '))
+        break;
       case 'line':
         el.setAttributeNS(null, 'x1', shape.x1)
         el.setAttributeNS(null, 'y1', shape.y1)
