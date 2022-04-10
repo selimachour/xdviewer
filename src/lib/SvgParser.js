@@ -53,7 +53,7 @@ const parser = {
     if (parser.syncRefs[syncSourceGuid]) {
       const el = svgElement('g', parser.syncRefs[syncSourceGuid])
       el.setAttributeNS(null, 'class', 'syncRef');
-        
+
       if (data.transform) {
         el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
       }
@@ -61,6 +61,9 @@ const parser = {
       container.appendChild(el)
 
       parser.children([parser.syncRefs[syncSourceGuid]], el);
+
+    } else {
+      console.warn(`syncRef: ${syncSourceGuid} not found`)
     }
 
   },

@@ -35,6 +35,13 @@
       Parser.syncRefs[symbol.id] = symbol;
       if (symbol.type === 'group') symbol.group.children.forEach(child => {
         Parser.syncRefs[child.id] = child;
+        if (child.type === 'group') child.group.children.forEach(child2 => {
+          Parser.syncRefs[child2.id] = child2;
+          if (child2.type === 'group') child2.group.children.forEach(child3 => {
+            Parser.syncRefs[child3.id] = child3;
+          })
+        })
+
       })
     })
 
