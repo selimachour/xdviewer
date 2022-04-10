@@ -127,9 +127,9 @@ const parser = {
               q${tr},0 ${tr},${tr} 
               v${shape.height - tr - br} 
               q0,${br} ${-br},${br}
-              h-${shape.width - bl - br}
+              h${-(shape.width - bl - br)}
               q${-bl},0 ${-bl},${-bl}
-              v-${shape.height - bl - tl}
+              v${-(shape.height - bl - tl)}
               q0,${-tl} ${tl},${-tl}
               z`.replace(/\s+/g, ' '))
           } else {
