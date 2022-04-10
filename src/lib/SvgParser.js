@@ -79,13 +79,15 @@ const parser = {
 
     if (data.text.paragraphs) {
       data.text.paragraphs.forEach(p => {
-        p.lines.forEach(async (l) => {
-          const tspan = svgElement('tspan', data)
-          tspan.setAttributeNS(null, 'x', l[0].x);
-          tspan.setAttributeNS(null, 'y', l[0].y);
-          tspan.appendChild(document.createTextNode(data.text.rawText.substr(l[0].from, l[0].to - l[0].from)))
-          await parser.parseStyle(l[0], tspan)
-          el.appendChild(tspan)
+        p.lines.forEach(async (line) => {
+          line.forEach(async (segment) => {
+            const tspan = svgElement('tspan', data)
+            tspan.setAttributeNS(null, 'x', segment.x);
+            tspan.setAttributeNS(null, 'y', segment.y);
+            tspan.appendChild(document.createTextNode(data.text.rawText.substr(segment.from, segment.to - segment.from)))
+            await parser.parseStyle(segment, tspan)
+            el.appendChild(tspan)
+          })
         })
       })
     } else {
