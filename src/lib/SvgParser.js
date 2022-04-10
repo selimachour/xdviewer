@@ -46,15 +46,25 @@ const parser = {
     container.appendChild(el)
     parser.children(data.group.children, el);
   },
+
   syncRef: async (data, container) => {
-    const el = svgElement('g', data)
-    el.setAttributeNS(null, 'class', 'syncRef');
-    if (data.transform) {
-      el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
+    const { syncSourceGuid, guid } = data;
+
+    if (parser.syncRefs[syncSourceGuid]) {
+      const el = svgElement('g', parser.syncRefs[syncSourceGuid])
+      el.setAttributeNS(null, 'class', 'syncRef');
+        
+      if (data.transform) {
+        el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
+      }
+
+      container.appendChild(el)
+
+      parser.children([parser.syncRefs[syncSourceGuid]], el);
     }
-    container.appendChild(el)
-    if (data.group) parser.children(data.group.children, el);
+
   },
+
   text: async (data, container) => {
     const el = svgElement('text', data)
     el.setAttributeNS(null, 'class', 'text');

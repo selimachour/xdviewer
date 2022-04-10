@@ -6,9 +6,10 @@
   
   let artboardsFilter = ''
 
-  let entries = {}, artboards = {}, status = '', clickedElement = null;
+  let entries = {}, artboards = {}, clickedElement = null;
 
   async function loadZip(event) {
+    entries = {}, artboards = {}, clickedElement = null;
 
     try {
       entries = await unzip(event.target.files[0])
@@ -27,6 +28,17 @@
       alert('Invalid XD file. Should be a zip with some files.')
     }
 
+    Parser.syncRefs = {};
+    const main = await readAsJson(entries['resources/graphics/graphicContent.agc']);
+    console.log({main});
+    main.resources.meta.ux.symbols.forEach(symbol => {
+      Parser.syncRefs[symbol.id] = symbol;
+      if (symbol.type === 'group') symbol.group.children.forEach(child => {
+        Parser.syncRefs[child.id] = child;
+      })
+    })
+
+    console.log(Parser.syncRefs);
   }
 
   const props = (el) => {
