@@ -1,8 +1,8 @@
 import * as zip from "@zip.js/zip.js";
 
 
-export const unzip = async (file) => {
-  const reader = new zip.ZipReader(new zip.BlobReader(file))
+export const unzip = async (file, blob = true) => {
+  const reader = new zip.ZipReader(blob ? new zip.BlobReader(file) : new zip.HttpReader(file))
 
   const entries = await reader.getEntries();
   reader.close();

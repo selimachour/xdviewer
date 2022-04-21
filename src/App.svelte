@@ -8,11 +8,18 @@
 
   let entries = {}, artboards = {}, clickedElement = null;
 
-  async function loadZip(event) {
+  // Pick your sample while developing
+  loadZip("http://localhost:3000/samples/sap.xd");
+
+  async function loadZip(eventOrUrl) {
     entries = {}, artboards = {}, clickedElement = null;
 
     try {
-      entries = await unzip(event.target.files[0])
+      if (typeof eventOrUrl === "string") {
+        entries = await unzip(eventOrUrl, false);
+      } else {
+        entries = await unzip(event.target.files[0])
+      }
       Parser.entries = entries;
       console.log({entries});
 
