@@ -21,6 +21,20 @@ const svgElement = (element, data) => {
   return el
 }
 
+const getTransform = data => {
+  let transform = "";
+
+  if (data.transform) {
+    transform += `translate(${data.transform.tx} ${data.transform.ty}) `;
+  }
+
+  if (data.meta?.ux?.rotation) {
+    transform += `rotate(${data.meta.ux.rotation}) `;
+  }
+
+  return transform;
+}
+
 const parser = {
   svg: null,
   parse: (data) => {
@@ -40,8 +54,9 @@ const parser = {
     const el = svgElement('g', data)
     el.setAttributeNS(null, 'class', 'group');
     await parser.parseStyle(data, el)
-    if (data.transform) {
-      el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
+    const transform = getTransform(data);
+    if (transform) {
+      el.setAttributeNS(null, 'transform', transform.trim())
     }
     container.appendChild(el)
     parser.children(data.group.children, el);
@@ -72,8 +87,9 @@ const parser = {
     const el = svgElement('text', data)
     el.setAttributeNS(null, 'class', 'text');
 
-    if (data.transform) {
-      el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
+    const transform = getTransform(data);
+    if (transform) {
+      el.setAttributeNS(null, 'transform', transform.trim())
     }
     await parser.parseStyle(data, el)
 
@@ -162,8 +178,10 @@ const parser = {
     await parser.parseStyle(data, el)
 
     container.appendChild(el)
-    if (data.transform) {
-      el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
+
+    const transform = getTransform(data);
+    if (transform) {
+      el.setAttributeNS(null, 'transform', transform.trim())
     }
   },
   children: (children, container) => {
