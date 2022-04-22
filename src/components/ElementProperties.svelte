@@ -1,4 +1,6 @@
 <script>
+  import JSONTree from 'svelte-json-tree';
+
   export let el;
   let elements = [];
   let selectedElement = null;
@@ -34,7 +36,9 @@
     {/each}
   </table>
   {#if selectedElement}
-  <pre>{JSON.stringify(selectedElement.definition, null, '  ')}</pre>
+  <div style="overflow-x: auto">
+    <JSONTree value={selectedElement.definition} />
+  </div>
   {/if}
 </div>
 

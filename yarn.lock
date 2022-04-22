@@ -369,6 +369,11 @@ svelte-hmr@^0.14.11:
   resolved "https://registry.yarnpkg.com/svelte-hmr/-/svelte-hmr-0.14.11.tgz#63d532dc9c2c849ab708592f034765fa2502e568"
   integrity sha512-R9CVfX6DXxW1Kn45Jtmx+yUe+sPhrbYSUp7TkzbW0jI5fVPn6lsNG9NEs5dFg5qRhFNAoVdRw5qQDLALNKhwbQ==
 
+svelte-json-tree@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/svelte-json-tree/-/svelte-json-tree-1.0.0.tgz#843f3fa8fa590cbc580674a1827de876b5328ebd"
+  integrity sha512-scs1OdkC8uFpTN4MX0yKkOzZ1/EG3eP1ARC+xcFthXp2IfcwBaXgab0FqA4Am0vQwffNNB+1Gd1LFkJBlynWTA==
+
 svelte@^3.44.0:
   version "3.46.4"
   resolved "https://registry.yarnpkg.com/svelte/-/svelte-3.46.4.tgz#0c46bc4a3e20a2617a1b7dc43a722f9d6c084a38"
