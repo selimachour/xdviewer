@@ -27,18 +27,6 @@ There is already an example
 - Display the Artboards
 - Show properties of the various elements on click ... "OH! it's the same color with just some alpha !"
 
-## Bugs
+## Bugs & Plans
 
-- Images sometimes are not displayed properly (need SVG expert)
-- `refSync`s not implemented yet so some parts might be missing
-
-## Todo
-- Clean the code ! 
-- Fix the bugs
-- Extracts a list of all font properties combinations which would help with creating unique css classes
-- Show css equivalent for properties (`fill: foo` => `background: bar`) 
-- Move the unzipping and parsing to a Web Worker
-- Add `Interactions`
-- ...
-
-
+See the [Issues](https://github.com/selimachour/xdviewer/issues) tab
