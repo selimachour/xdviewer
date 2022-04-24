@@ -40,9 +40,7 @@ const parser = {
     const el = svgElement('g', data)
     el.setAttributeNS(null, 'class', 'group');
     await parser.parseStyle(data, el)
-    if (data.transform) {
-      el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
-    }
+    parser.applyTransform(el, data);
     container.appendChild(el)
     parser.children(data.group.children, el);
   },
@@ -54,9 +52,7 @@ const parser = {
       const el = svgElement('g', parser.syncRefs[syncSourceGuid])
       el.setAttributeNS(null, 'class', 'syncRef');
 
-      if (data.transform) {
-        el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
-      }
+      parser.applyTransform(el, data);
 
       container.appendChild(el)
 
@@ -72,9 +68,7 @@ const parser = {
     const el = svgElement('text', data)
     el.setAttributeNS(null, 'class', 'text');
 
-    if (data.transform) {
-      el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
-    }
+    parser.applyTransform(el, data);
     await parser.parseStyle(data, el)
 
     if (data.text.paragraphs) {
@@ -162,9 +156,8 @@ const parser = {
     await parser.parseStyle(data, el)
 
     container.appendChild(el)
-    if (data.transform) {
-      el.setAttributeNS(null, 'transform', `translate(${data.transform.tx} ${data.transform.ty})`)
-    }
+    parser.applyTransform(el, data);
+
   },
   children: (children, container) => {
     if (!children) return;
@@ -176,7 +169,12 @@ const parser = {
       }
     })
   },
-
+  applyTransform(el, data) {
+    if (data.transform) {
+      const { a, b, c, d, tx, ty } = data.transform;
+      el.style.transform = `matrix(${a}, ${b}, ${c}, ${d}, ${tx}, ${ty})`;
+    }
+  },
   parseStyle: async (data, el) => {
     if (!data.style) return '';
 
@@ -195,8 +193,10 @@ const parser = {
         pattern.setAttributeNS(null, 'viewBox', `0 0 ${style.fill.pattern.width} ${style.fill.pattern.height}`);
         pattern.setAttributeNS(null, 'preserveAspectRatio', 'xMidYMid slice');
         if (!cache[resourceId]) {
+          console.time('image'+resourceId)
           const resourceEntry = parser.entries[`resources/${resourceId}`];
           cache[resourceId] = await readAsBase64Img(resourceEntry);
+          console.timeEnd('image'+resourceId)
         }
         const image = svgElement('image');
         image.setAttributeNS(null, 'href', cache[resourceId]);
