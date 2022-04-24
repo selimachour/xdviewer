@@ -2,6 +2,7 @@
   import JSONTree from 'svelte-json-tree';
 
   export let el;
+  let treeView = false;
   let elements = [];
   let selectedElement = null;
 
@@ -36,8 +37,15 @@
     {/each}
   </table>
   {#if selectedElement}
+  <label>
+    <input type="checkbox" bind:checked={treeView}> Tree view
+  </label>
   <div style="overflow-x: auto">
+    {#if treeView}
     <JSONTree value={selectedElement.definition} />
+    {:else}
+    <pre>{JSON.stringify(selectedElement.definition, null, '  ')}</pre>
+    {/if}
   </div>
   {/if}
 </div>
