@@ -198,10 +198,17 @@ const parser = {
           cache[resourceId] = await readAsBase64Img(resourceEntry);
           console.timeEnd('image'+resourceId)
         }
+
         const image = svgElement('image');
         image.setAttributeNS(null, 'href', cache[resourceId]);
         image.setAttributeNS(null, 'width', style.fill.pattern.width);
         image.setAttributeNS(null, 'height', style.fill.pattern.height);
+
+        // pattern with offset ?
+        const { offsetX, offsetY } = style.fill.pattern.meta.ux;
+        if (offsetX) image.setAttributeNS(null, 'x', style.fill.pattern.width * offsetX);
+        if (offsetY) image.setAttributeNS(null, 'y', style.fill.pattern.height * offsetY);
+
         pattern.appendChild(image);
         parser.defs.appendChild(pattern);
 
