@@ -116,6 +116,14 @@ const parser = {
         el.setAttribute('r', shape.r);
         break;
 
+      case 'ellipse':
+        el.setAttributeNS(null, 'id', shape.id)
+        el.setAttributeNS(null, 'cx', shape.cx);
+        el.setAttributeNS(null, 'cy', shape.cy);
+        el.setAttributeNS(null, 'rx', shape.rx);
+        el.setAttributeNS(null, 'ry', shape.ry);
+        break;
+
       case 'path':
         el.setAttribute('d', shape.path)
         break;
