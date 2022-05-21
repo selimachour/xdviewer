@@ -5,6 +5,7 @@
   import { unzip, readAsJson } from './lib/parser/unzip.js'
   
   let artboardsFilter = ''
+  let viewerWidth
 
   let entries = {}, artboards = {}, clickedElement = null;
 
@@ -85,7 +86,8 @@
   <aside id="Right">
     <ElementProperties el={clickedElement} />
   </aside>
-  <div id="Viewer">
+  <div id="Viewer" bind:clientWidth={viewerWidth}>
+    <span class="width">{viewerWidth}px</span>
     <svg id="svg" />
   </div>
   <!-- <StatusBar {status} /> -->
@@ -101,6 +103,14 @@ nav {
   background-color: #ddd;
   height: var(--navHeight);
   padding-inline: 1rem;
+}
+
+.width {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 10px;
+  opacity: 0.2;
 }
 
 </style>
