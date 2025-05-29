@@ -12,9 +12,9 @@ Because some of us don't have Macs, don't like Windows, but still need to work w
 
 ```
 git clone git@github.com:selimachour/xdviewer.git
-cd xdviwer
+cd xdviewer
 yarn
-yarn devs
+yarn dev
 ```
 
 Also for fonts, add the required fonts in `/fonts` and include them in index.html
